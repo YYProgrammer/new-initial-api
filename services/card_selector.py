@@ -10,9 +10,9 @@ class CardSelector:
     def __init__(self):
         self.openai_service = OpenAIService()
     
-    async def select_card(self, query: str, screen_content: Optional[str] = None) -> List[CardData]:
+    async def select_card(self, query: str, screen_content: Optional[str] = None, user_location: Optional[str] = None) -> List[CardData]:
         """
-        Select the most suitable card based on user query and screen content
+        Select the most suitable card based on user query, screen content, and user location
         """
         # Analyze query using OpenAI
         analysis = await self.openai_service.analyze_query(query, screen_content)
@@ -21,12 +21,12 @@ class CardSelector:
         parameters = analysis.get("parameters", {})
         
         # Generate card based on type
-        card_data = self._generate_card_data(card_type, parameters, query, screen_content)
+        card_data = self._generate_card_data(card_type, parameters, query, screen_content, user_location)
         
         return [card_data]
     
     def _generate_card_data(self, card_type: str, parameters: Dict[str, Any], 
-                          query: str, screen_content: Optional[str]) -> CardData:
+                          query: str, screen_content: Optional[str], user_location: Optional[str] = None) -> CardData:
         """
         Generate card data based on card type and parameters
         """
@@ -42,7 +42,7 @@ class CardSelector:
             return CardData(
                 card_name="FlightsCard",
                 card_id=card_id,
-                data=self._generate_flights_card_data(parameters, query)
+                data=self._generate_flights_card_data(parameters, query, user_location)
             )
         elif card_type == "ShoppingCard":
             return CardData(
@@ -109,7 +109,7 @@ class CardSelector:
     def _generate_info_card_data(self, parameters: Dict[str, Any], query: str) -> Dict:
         return {"query": parameters.get("query", query)}
     
-    def _generate_flights_card_data(self, parameters: Dict[str, Any], query: str) -> Dict:
+    def _generate_flights_card_data(self, parameters: Dict[str, Any], query: str, user_location: Optional[str] = None) -> Dict:
         tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
         
         # Extract departure and arrival locations with better mapping
@@ -121,6 +121,12 @@ class CardSelector:
             departure = parameters.get("departure_airport", "")
         if not arrival:
             arrival = parameters.get("arrival_airport", "")
+        
+        # Use user_location as default departure if no departure location found
+        if not departure and user_location:
+            departure = user_location
+        elif not departure:
+            departure = "SFO"  # Final fallback
         
         # Handle trip_start_date with past date validation
         trip_start_date = parameters.get("trip_start_date") or tomorrow

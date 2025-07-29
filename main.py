@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -26,13 +26,20 @@ app.add_middleware(
 )
 
 @app.post("/initial", response_model=InitialAPIResponse)
-async def initial_api(request: InitialAPIRequest):
+async def initial_api(
+    request: InitialAPIRequest,
+    x_brain_user_location: Optional[str] = Header(None, alias="X-Brain-User-Location")
+):
     """
     Process user query and return the most suitable card
     """
     try:
         card_selector = CardSelector()
-        result = await card_selector.select_card(request.query, request.screen_content)
+        result = await card_selector.select_card(
+            request.query, 
+            request.screen_content, 
+            user_location=x_brain_user_location
+        )
         
         return InitialAPIResponse(
             query=request.query,
