@@ -9,9 +9,13 @@ class OpenAIService:
         self.test_mode = api_key == "OPENAI_API_KEY" or not api_key
         
         if not self.test_mode:
-            self.client = openai.AsyncOpenAI(api_key=api_key)
+            # Use Cerebras proxy endpoint instead of OpenAI
+            self.client = openai.AsyncOpenAI(
+                api_key="DlJYSkMVj1x4zoe8jZnjvxfHG6z5yGxK",
+                base_url="https://cerebras-proxy.brain.loocaa.com:1443/v1"
+            )
         else:
-            print("Running in test mode - no real OpenAI API calls will be made")
+            print("Running in test mode - no real API calls will be made")
     
     async def analyze_query(self, query: str, screen_content: Optional[str] = None) -> dict:
         """
@@ -81,7 +85,7 @@ For Translation, use these exact parameter names:
             
         try:
             response = await self.client.chat.completions.create(
-                model="gpt-4o",
+                model="qwen-3-235b-a22b-instruct-2507",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_content}

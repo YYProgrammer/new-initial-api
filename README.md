@@ -4,7 +4,7 @@ An API service that analyzes user queries and returns the most suitable card typ
 
 ## Features
 
-- Analyzes user queries using OpenAI GPT-4o
+- Analyzes user queries using Cerebras Qwen-3-235B model
 - Supports 11 different card types
 - RESTful API with automatic documentation
 - Configurable environment settings
@@ -34,7 +34,7 @@ pip install -r requirements.txt
 ```bash
 cp .env.example .env
 ```
-Edit `.env` and add your OpenAI API key.
+Edit `.env` and add your Cerebras API key.
 
 3. Run the application:
 ```bash
