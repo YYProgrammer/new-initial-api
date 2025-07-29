@@ -1,0 +1,13 @@
+{
+    "query": "please introduce him",
+    "card_list": [
+        {
+            "card_name": "InfoCard",
+            "card_id": "card-85d4344c-bfcd-40ce-bad3-fad0d70167ed",
+            "data": {
+                "query": "michael jordan"
+            }
+        }
+    ],
+    "hide_suggestion_cards": false
+}

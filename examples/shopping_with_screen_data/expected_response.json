@@ -1,0 +1,16 @@
+{
+                                                                                                                                            "query": "help me buy the product",
+                                                                                                                                            "card_list": [
+                                                                                                                                                {
+                                                                                                                                                    "card_name": "ShoppingSearchResults",
+                                                                                                                                                    "card_id": "card-da1fabd5-e39d-4c7e-825c-11c47831f105",
+                                                                                                                                                    "data": {
+                                                                                                                                                        "search_query": "拉布布",
+                                                                                                                                                        "platforms": "Amazon",
+                                                                                                                                                        "gender": "all_gender",
+                                                                                                                                                        "brands": null
+                                                                                                                                                    }
+                                                                                                                                                }
+                                                                                                                                            ],
+                                                                                                                                            "hide_suggestion_cards": true
+                                                                                                                                        }

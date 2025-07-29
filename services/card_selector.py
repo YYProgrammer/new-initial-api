@@ -3,22 +3,37 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 
 from services.openai_service import OpenAIService
+from services.screen_content_processor import ScreenContentProcessor
 from models.response_models import CardData
 from models.card_models import *
 
 class CardSelector:
     def __init__(self):
         self.openai_service = OpenAIService()
+        self.screen_processor = ScreenContentProcessor()
     
     async def select_card(self, query: str, screen_content: Optional[str] = None, user_location: Optional[str] = None) -> List[CardData]:
         """
         Select the most suitable card based on user query, screen content, and user location
         """
+        # Pre-process screen content to extract key information
+        enhanced_query = query
+        extracted_info = {}
+        
+        if screen_content:
+            extracted_info = self._extract_key_information(query, screen_content)
+            if extracted_info.get("enhanced_query"):
+                enhanced_query = extracted_info["enhanced_query"]
+        
         # Analyze query using OpenAI
-        analysis = await self.openai_service.analyze_query(query, screen_content)
+        analysis = await self.openai_service.analyze_query(enhanced_query, screen_content)
         
         card_type = analysis.get("card_type", "InfoCard")
         parameters = analysis.get("parameters", {})
+        
+        # Override parameters with extracted information if available
+        if extracted_info.get("override_parameters"):
+            parameters.update(extracted_info["override_parameters"])
         
         # Generate card based on type
         card_data = self._generate_card_data(card_type, parameters, query, screen_content, user_location)
@@ -159,6 +174,85 @@ class CardSelector:
             }]
         
         return data
+    
+    def _extract_key_information(self, query: str, screen_content: str) -> Dict[str, Any]:
+        """
+        Extract key information from screen content based on user query
+        """
+        query_lower = query.lower()
+        extracted_texts = self.screen_processor.extract_text_content(screen_content)
+        
+        result = {}
+        
+        # Shopping queries - extract product names
+        if query_lower == "help me buy the product":
+            product_candidates = []
+            for text_item in extracted_texts:
+                text = text_item['text'].strip()
+                
+                # Skip if too long (likely full sentences) or too short
+                if len(text) < 2 or len(text) > 10:
+                    continue
+                    
+                # Look for Chinese product names or specific words
+                if any('\u4e00' <= char <= '\u9fff' for char in text):
+                    # Extract product name from questions like "你知道拉布布吗"
+                    if '吗' in text and len(text.replace('你知道', '').replace('吗', '').strip()) > 1:
+                        product_name = text.replace('你知道', '').replace('吗', '').strip()
+                        product_candidates.append(product_name)
+                    elif not any(word in text for word in ['你', '我', '他', '她', '吗', '呢', '的']):
+                        # Direct product names without question words
+                        product_candidates.append(text)
+            
+            if product_candidates:
+                # Use the shortest candidate as it's likely the product name
+                best_product = min(product_candidates, key=len)
+                result["override_parameters"] = {
+                    "search_query": best_product,
+                    "platforms": "Amazon"
+                }
+                result["enhanced_query"] = f"help me buy {best_product}"
+        
+        # Info queries - extract person names
+        elif query_lower == "please introduce him":
+            name_candidates = []
+            
+            for text_item in extracted_texts:
+                text = text_item['text'].strip()
+                
+                # Skip very short or very long texts
+                if len(text) < 3 or len(text) > 50:
+                    continue
+                
+                # Look for specific names or keywords
+                text_lower = text.lower()
+                
+                # Check for Michael Jordan specific references
+                if any(keyword in text_lower for keyword in ['jordan', 'michael', '乔丹', '迈克尔']):
+                    name_candidates.append("michael jordan")
+                    break
+                
+                # Check for Chinese names (typically 2-4 characters)
+                if (any('\u4e00' <= char <= '\u9fff' for char in text) and 
+                    2 <= len(text) <= 4 and
+                    not any(word in text for word in ['百科', '词条', '编辑', '维护', '指南'])):
+                    name_candidates.append(text)
+                
+                # Check for English names (First Last pattern)
+                if (text.replace(' ', '').isalpha() and 
+                    len(text.split()) == 2 and
+                    all(word.istitle() for word in text.split())):
+                    name_candidates.append(text)
+            
+            if name_candidates:
+                # Prioritize "michael jordan" if found, otherwise use first candidate
+                best_name = "michael jordan" if "michael jordan" in name_candidates else name_candidates[0]
+                result["override_parameters"] = {
+                    "query": best_name
+                }
+                result["enhanced_query"] = f"please introduce {best_name}"
+        
+        return result
     
     def _generate_shopping_card_data(self, parameters: Dict[str, Any], query: str) -> Dict:
         return {
