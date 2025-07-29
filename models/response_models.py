@@ -9,3 +9,4 @@ class CardData(BaseModel):
 class InitialAPIResponse(BaseModel):
     query: str
     card_list: List[CardData]
+    hide_suggestion_cards: bool

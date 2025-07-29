@@ -41,9 +41,16 @@ async def initial_api(
             user_location=x_brain_user_location
         )
         
+        # Check if any card is shopping, flight, or plan card
+        hide_suggestion_cards = any(
+            card.card_name in ["ShoppingSearchResults", "FlightsCard", "PlanningCard"] 
+            for card in result
+        )
+        
         return InitialAPIResponse(
             query=request.query,
-            card_list=result
+            card_list=result,
+            hide_suggestion_cards=hide_suggestion_cards
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
